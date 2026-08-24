@@ -2,8 +2,10 @@
 Embeddings nach Postgres. Unveränderte Dateien werden übersprungen."""
 
 import hashlib
+import json
 import os
 import re
+import sys
 from pathlib import Path
 
 import psycopg
@@ -15,6 +17,8 @@ VAULT_PATH = Path(os.environ.get("VAULT_PATH", "/vault"))
 DATABASE_URL = os.environ["DATABASE_URL"]
 EMBED_MODEL = os.environ["EMBED_MODEL"]
 MAX_CHARS = int(os.environ.get("MAX_CHUNK_CHARS", "2000"))
+# --force ignoriert den Hash-Vergleich und indexiert alles neu.
+FORCE = "--force" in sys.argv
 BATCH_SIZE = 32
 
 client = OpenAI(
@@ -38,6 +42,9 @@ def parse_frontmatter(text: str):
         meta = {}
     if not isinstance(meta, dict):
         meta = {}
+    # YAML liest z.B. last_review: 2026-08-24 als date-Objekt ein, das
+    # sich nicht als JSON speichern lässt. Alles Unbekannte wird zu Text.
+    meta = json.loads(json.dumps(meta, default=str))
     return meta, parts[2].lstrip("\n")
 
 
@@ -73,14 +80,40 @@ def split_long(text: str):
     return out
 
 
-def build_chunks(title: str, body: str):
-    """Erzeugt die finalen Chunks. Titel und Überschrift werden in den Text
-    aufgenommen, damit ein Chunk auch isoliert verständlich bleibt."""
+def as_list(value):
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def meta_line(meta: dict) -> str:
+    """Baut eine Kopfzeile aus dem Frontmatter. Sie wird in jeden Chunk
+    aufgenommen, damit das Modell Geltungsbereich und Verbindlichkeit sieht -
+    sonst landen diese Angaben nur in der Datenbank und nie im Prompt."""
+    parts = []
+    if meta.get("layer"):
+        parts.append(f"Ebene: {meta['layer']}")
+    scope = as_list(meta.get("scope"))
+    parts.append("gilt für: " + (", ".join(scope) if scope else "alle Systeme"))
+    if meta.get("source"):
+        parts.append(f"Herkunft: {meta['source']}")
+    verbindlich = meta.get("verbindlich")
+    if verbindlich is not None:
+        parts.append("verbindlich: " + ("ja" if verbindlich else "NEIN"))
+    if meta.get("hinweis"):
+        parts.append(f"Hinweis: {meta['hinweis']}")
+    return "[" + " | ".join(parts) + "]"
+
+
+def build_chunks(title: str, body: str, meta: dict):
+    """Erzeugt die finalen Chunks. Titel, Überschrift und Metadaten werden in
+    den Text aufgenommen, damit ein Chunk auch isoliert verständlich bleibt."""
+    header = meta_line(meta)
     chunks = []
     for heading, text in split_sections(body):
         for piece in split_long(text):
             prefix = f"{title} > {heading}" if heading else title
-            chunks.append((heading, f"# {prefix}\n\n{piece}"))
+            chunks.append((heading, f"# {prefix}\n{header}\n\n{piece}"))
     return chunks
 
 
@@ -108,13 +141,13 @@ def main():
             row = conn.execute(
                 "select content_hash from documents where path = %s", (rel,)
             ).fetchone()
-            if row and row[0] == digest:
+            if row and row[0] == digest and not FORCE:
                 print(f"  unverändert: {rel}")
                 continue
 
             meta, body = parse_frontmatter(raw)
             title = meta.get("title") or path.stem
-            chunks = build_chunks(title, body)
+            chunks = build_chunks(title, body, meta)
             if not chunks:
                 print(f"  leer, übersprungen: {rel}")
                 continue

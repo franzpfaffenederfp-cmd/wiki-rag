@@ -1,36 +1,13 @@
--- Schema für Obsidian-Wiki-RAG
--- Wird beim ersten Start des DB-Containers automatisch ausgeführt.
--- ACHTUNG: vector(1536) muss zur Dimension deines Embedding-Modells passen.
+-- Migration 002: Metadaten-Filter für die Hybrid-Suche
+-- Anwenden auf eine bereits laufende Datenbank:
+--   docker compose exec -T db psql -U wiki -d wiki < db/002_metadata.sql
+--
+-- Die Frontmatter-Felder liegen bereits in documents.frontmatter (jsonb).
+-- Es braucht daher keine neue Spalte, nur eine erweiterte Suchfunktion.
 
-create extension if not exists vector;
+drop function if exists search_chunks(vector, text, int, int);
+drop function if exists search_chunks(vector, text, int, text, text[], int);
 
-create table if not exists documents (
-    id           bigserial primary key,
-    path         text unique not null,
-    title        text,
-    frontmatter  jsonb not null default '{}'::jsonb,
-    content_hash text not null,
-    updated_at   timestamptz not null default now()
-);
-
-create table if not exists chunks (
-    id          bigserial primary key,
-    document_id bigint not null references documents(id) on delete cascade,
-    chunk_index int not null,
-    heading     text,
-    content     text not null,
-    embedding   vector(1536),
-    fts         tsvector generated always as (to_tsvector('german', content)) stored
-);
-
-create index if not exists chunks_document_id_idx on chunks (document_id);
-create index if not exists chunks_fts_idx on chunks using gin (fts);
-create index if not exists chunks_embedding_idx
-    on chunks using hnsw (embedding vector_cosine_ops);
-
--- Hybrid-Suche mit Metadaten-Filter: Vektor- und Volltext-Treffer werden
--- per Reciprocal Rank Fusion zusammengeführt. Rein semantische Suche findet
--- Fachbegriffe und Abkürzungen oft schlecht, deshalb beides.
 create function search_chunks(
     query_embedding vector(1536),
     query_text      text,

@@ -1,0 +1,9 @@
+# Zugangsdaten - nie committen
+.env
+
+# Inhalts-Repo, wird separat geklont
+vault/
+
+# Python
+__pycache__/
+*.pyc

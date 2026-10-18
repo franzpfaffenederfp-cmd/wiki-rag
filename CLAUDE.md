@@ -137,13 +137,15 @@ Regeln:
 
 ## Aktueller Stand
 
-Stand 18.10.2026: Aufbau abgeschlossen, Container laufen, erster Ingest und
-Tests erfolgreich. Details und nächste Schritte in `UEBERGABE-claude-code.md`.
+Stand 18.10.2026: Aufbau abgeschlossen, Container laufen, Ingest und alle
+Tests erfolgreich, Scope-Filter geprüft. Details und nächste Schritte in
+`UEBERGABE-claude-code.md`.
 
 Testfälle für spätere Prüfungen: Betriebsvereinbarung (Fund aus `betrieb`, nur
-mit `"exclude_layers":[]`), Scope-Filter (`"scope":"intune"`, braucht eine
-Seite nur für `uem`, die noch fehlt), Frage ohne Treffer muss "steht nicht im
-Wiki" liefern.
+mit `"exclude_layers":[]`), Scope-Filter ("Wie setze ich Passwortvorgaben für
+Mobilgeräte um?": mit `"scope":"uem"` Fund aus
+`umsetzung/uem/it-richtlinie-passwort.md`, mit `"scope":"intune"` "Dazu steht
+nichts im Wiki."), Frage ohne Treffer muss "steht nicht im Wiki" liefern.
 
 ## Offene Vorhaben
 

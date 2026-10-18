@@ -95,7 +95,46 @@ Nach Änderungen an der `.env`: `docker compose up -d` (legt `api` neu an und
 liest die `.env` neu). `docker compose start` / `restart` reichen dafür nicht.
 Wer das Embedding-Modell wechselt, muss mit `--force` neu indexieren.
 
-## 5. Offen bei Franz
+## 5. Arbeiten vom PC aus (ab 18.10.2026)
+
+Franz arbeitet künftig mit Claude Code auf seinem Windows-PC statt auf dem
+Server. Die Notizen (Memory) der Server-Sitzung kommen nicht mit, das
+Wichtige steht hier.
+
+- **Ordner auf dem PC:** `Dokumente\wiki-rag` (Code-Repo) und
+  `Dokumente\wiki-vault` (Vault). Start:
+  `cd ~\Documents\wiki-rag` und `claude --add-dir ..\wiki-vault`.
+- **Editor:** Obsidian auf dem PC, Vault `Dokumente\wiki-vault`. Plugin
+  "Git" zum Hochladen ("Git: Commit-and-sync"). Vault-`.gitignore` schließt
+  `.obsidian/` und `.trash/` aus.
+- **GitHub-Konten:** Franz hat zwei eigene Konten. `franzpfaffenederfp-cmd`
+  besitzt `wiki-rag` und `wiki-vault`, `frankyhome` ist für andere Projekte.
+  Windows hatte `frankyhome` gespeichert, das führte zu einem 403 beim Push.
+  Deshalb steht der Kontoname in der Remote-URL:
+  `https://franzpfaffenederfp-cmd@github.com/franzpfaffenederfp-cmd/<repo>.git`
+- **Vault-Seiten:** Claude darf Seiten im Vault auf dem PC anlegen und
+  ändern, aber **nicht selbst committen oder pushen**. Franz prüft die Seite
+  in Obsidian und lädt sie selbst hoch.
+- **Code-Repo:** Commit und Push wie bisher nur nach Freigabe mit Diff.
+- **Server-Arbeiten** (git pull im Vault, Ingest, Docker, Tests) laufen per
+  SSH vom PC aus, im Ordner `/docker/wiki-rag`. Alle Regeln aus `CLAUDE.md`
+  gelten weiter, besonders: fremde Container nicht anfassen, keine
+  prune-Befehle, `.env` und Keys nie ausgeben.
+  - **Offen:** Die SSH-Anmeldung muss ohne Passwort-Eingabe gehen
+    (Schlüssel). Noch nicht geklärt, wie Franz sich derzeit verbindet.
+    Zuerst mit `ssh <server> "echo ok"` prüfen. Ob die Änderung an
+    `/root/.ssh/authorized_keys` (18.10.2026, 12:12) der PC-Schlüssel von
+    Franz war, ist ebenfalls offen.
+- **Ablauf neue Seite:** Claude schreibt die Seite im PC-Vault → Franz prüft
+  in Obsidian → "Git: Commit-and-sync" → per SSH: `cd /docker/wiki-rag/vault
+  && git pull`, Pfad und Frontmatter prüfen →
+  `docker compose run --rm ingest python ingest.py` → Testfrage an `/ask`.
+- **Dateien, die Claude auf dem Server geändert hat:** in `.env` die
+  `EMBED_*`/`CHAT_*`-Zeilen (Keys hat Franz selbst eingetragen), neuer
+  Schlüssel `/root/.ssh/wiki_rag`, `core.sshCommand` und `pushurl` im
+  Code-Repo. Sonst nichts außerhalb der Repos.
+
+## 6. Offen bei Franz
 
 - OpenAI: Datenschutz prüfen (Region, AVV, Nutzung der Daten zum Training),
   bevor echte Inhalte indexiert werden. Budget-Limit für den Wiki-RAG-Key bzw.
@@ -106,7 +145,7 @@ Wer das Embedding-Modell wechselt, muss mit `--force` neu indexieren.
 - `/root/.ssh/authorized_keys` wurde am 18.10.2026 um 12:12 geändert, nicht
   durch Claude. Prüfen, ob das gewollt war.
 
-## 6. Regeln (aus CLAUDE.md, hier zur Sicherheit wiederholt)
+## 7. Regeln (aus CLAUDE.md, hier zur Sicherheit wiederholt)
 
 - Nur Ressourcen mit Namen `wiki-rag*` anfassen. Fremde Container
   (`openclaw`, `openclaw-sandbox`, `rv001-linkbot`, `hermes*`, `n8n*`, `traefik`),

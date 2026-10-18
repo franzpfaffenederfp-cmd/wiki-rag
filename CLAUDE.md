@@ -8,8 +8,12 @@ Entwickler: Befehle kurz erklären, Änderungen einzeln und nachvollziehbar mach
 ## Architektur
 
 Obsidian (nur Editor, lokal beim Autor) -> GitHub `wiki-vault` (Wahrheit) ->
-Ingest-Script -> nexos.ai (Embeddings) -> Postgres + pgvector -> API /ask ->
-nexos.ai (Chat) -> Antwort mit Quellen.
+Ingest-Script -> OpenAI (Embeddings) -> Postgres + pgvector -> API /ask ->
+OpenAI (Chat) -> Antwort mit Quellen.
+
+Seit 18.10.2026 laufen Embeddings und Chat über OpenAI direkt (eigener Key
+nur für Wiki-RAG). Vorher war nexos.ai vorgesehen, dort fehlen API-Credits.
+nexos bleibt als Rückfall in der `.env` stehen.
 
 - Code-Repo: https://github.com/franzpfaffenederfp-cmd/wiki-rag (öffentlich).
   Holen per HTTPS, Push per SSH mit eigenem Deploy Key `/root/.ssh/wiki_rag`
@@ -36,23 +40,35 @@ nexos.ai (Chat) -> Antwort mit Quellen.
 
 ## Konfiguration (`.env`, nie committen)
 
-`POSTGRES_PASSWORD`, `NEXOS_API_KEY`, `NEXOS_BASE_URL=https://api.nexos.ai/v1`,
-`EMBED_MODEL=Text Embedding 3 Small` (1536 Dimensionen, passt zum Schema),
-`CHAT_MODEL=Claude Sonnet 4.6`, `MAX_CHUNK_CHARS`, `MATCH_COUNT`,
-`EXCLUDE_LAYERS=betrieb`. Vorlage: `.env.example`.
+Aktuelle Werte (ohne Keys):
 
-- Embeddings und Chat sind getrennt konfigurierbar: `EMBED_BASE_URL`,
-  `EMBED_API_KEY`, `EMBED_MODEL` und `CHAT_BASE_URL`, `CHAT_API_KEY`,
-  `CHAT_MODEL`. Fehlt eine `*_BASE_URL` / `*_API_KEY` oder ist sie leer, gilt
-  `NEXOS_BASE_URL` / `NEXOS_API_KEY`. Ein Anbieterwechsel betrifft so nur die
-  `.env`. Der Ingest nutzt nur die `EMBED_*`-Werte.
+- `EMBED_BASE_URL=https://api.openai.com/v1`,
+  `EMBED_MODEL=text-embedding-3-small` (1536 Dimensionen, passt zum Schema)
+- `CHAT_BASE_URL=https://api.openai.com/v1`, `CHAT_MODEL=gpt-5.4-nano`
+- `EMBED_API_KEY`, `CHAT_API_KEY`: derselbe OpenAI-Key
+- `POSTGRES_PASSWORD`, `MAX_CHUNK_CHARS`, `MATCH_COUNT`,
+  `EXCLUDE_LAYERS=betrieb`
+- Rückfall: `NEXOS_BASE_URL=https://api.nexos.ai/v1`, `NEXOS_API_KEY`
+
+Vorlage: `.env.example`.
+
+- Embeddings und Chat sind getrennt konfigurierbar. Fehlt eine `*_BASE_URL` /
+  `*_API_KEY` oder ist sie leer, gilt `NEXOS_BASE_URL` / `NEXOS_API_KEY`. Ein
+  Anbieterwechsel betrifft so nur die `.env`. Der Ingest nutzt nur die
+  `EMBED_*`-Werte.
+- Nach jeder `.env`-Änderung `docker compose up -d` (legt `api` neu an).
+  `docker compose start` / `restart` lesen die `.env` NICHT neu.
 - Ein Embedding-Modell mit anderer Vektorlänge als 1536 braucht zusätzlich
-  Schema-Migration und `--force`-Ingest, `.env` allein reicht dann nicht.
-
-- Modell-IDs bei nexos enthalten LEERZEICHEN und werden im Klartext verwendet.
-  In der `.env` ohne Anführungszeichen, in JSON-Bodies in Anführungszeichen.
-- Der nexos-Key und die `.env` sind nirgends gesichert. Nie in Chat, Logs,
-  Commits oder Ausgaben wiedergeben.
+  Schema-Migration und `--force`-Ingest, `.env` allein reicht dann nicht. Auch
+  bei gleicher Länge nach Modellwechsel mit `--force` neu indexieren.
+- Verfügbare Modellnamen vor dem Eintragen prüfen (`GET /v1/models`), nicht
+  raten. `gpt-5.6-nano` z. B. gibt es für den Key nicht.
+- Modellnamen: bei OpenAI klein und ohne Leerzeichen (`gpt-5.4-nano`), bei
+  nexos mit LEERZEICHEN im Klartext (`Claude Sonnet 4.6`). In der `.env` immer
+  ohne Anführungszeichen, in JSON-Bodies in Anführungszeichen.
+- Die API-Keys und die `.env` sind nirgends gesichert. Nie in Chat, Logs,
+  Commits oder Ausgaben wiedergeben. Kopien (`.env.save` von nano) sofort
+  löschen, `.gitignore` schließt `.env.*` aus.
 
 ## Wiki-Konventionen (Inhalt)
 
@@ -121,17 +137,13 @@ Regeln:
 
 ## Aktueller Stand
 
-Docker, git und jq sind installiert, `/docker` ist leer, `.env` und Deploy Key
-fehlen noch. Zu tun, in dieser Reihenfolge:
+Stand 18.10.2026: Aufbau abgeschlossen, Container laufen, erster Ingest und
+Tests erfolgreich. Details und nächste Schritte in `UEBERGABE-claude-code.md`.
 
-1. Prüfen, was auf dem Server schon vorhanden ist (Docker, git, jq, Repos, `.env`).
-2. Deploy Key neu erzeugen; Franz trägt ihn auf GitHub ein.
-3. `wiki-rag` und `wiki-vault` klonen, `.env` anlegen (Key von Franz abfragen,
-   nicht raten).
-4. `docker compose up -d --build`, dann Ingest, dann `/health` prüfen.
-5. Tests: Betriebsvereinbarung (Fund aus `betrieb`, nur mit
-   `"exclude_layers":[]`), Scope-Filter (`"scope":"intune"`), Frage ohne
-   Treffer muss "steht nicht im Wiki" liefern.
+Testfälle für spätere Prüfungen: Betriebsvereinbarung (Fund aus `betrieb`, nur
+mit `"exclude_layers":[]`), Scope-Filter (`"scope":"intune"`, braucht eine
+Seite nur für `uem`, die noch fehlt), Frage ohne Treffer muss "steht nicht im
+Wiki" liefern.
 
 ## Offene Vorhaben
 

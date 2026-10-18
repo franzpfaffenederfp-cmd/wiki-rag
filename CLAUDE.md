@@ -11,7 +11,10 @@ Obsidian (nur Editor, lokal beim Autor) -> GitHub `wiki-vault` (Wahrheit) ->
 Ingest-Script -> nexos.ai (Embeddings) -> Postgres + pgvector -> API /ask ->
 nexos.ai (Chat) -> Antwort mit Quellen.
 
-- Code-Repo: https://github.com/franzpfaffenederfp-cmd/wiki-rag (öffentlich)
+- Code-Repo: https://github.com/franzpfaffenederfp-cmd/wiki-rag (öffentlich).
+  Holen per HTTPS, Push per SSH mit eigenem Deploy Key `/root/.ssh/wiki_rag`
+  (Schreibrecht nur für `wiki-rag`, eingerichtet über `pushurl` und
+  `core.sshCommand` im Repo). Push nur nach Freigabe mit Diff.
 - Inhalts-Repo: git@github.com:franzpfaffenederfp-cmd/wiki-vault.git (privat,
   Zugriff per Deploy Key `/root/.ssh/wiki_vault`, nur Lesen)
 - Server: Hostinger VPS, Ubuntu 24.04, 8 GB RAM, Pfad `/docker/wiki-rag`
@@ -82,7 +85,8 @@ Weitere Felder: `scope: [uem]` / `[intune]` (fehlt = gilt für alle),
 - Ports nur an `127.0.0.1` binden. Nichts direkt ins Internet öffnen.
 - Die API hat keine eigene Anmeldung. Externer Zugriff nur über Cloudflare
   Tunnel MIT Cloudflare Access davor.
-- Deploy Key bleibt schreibgeschützt.
+- Der Vault-Key `wiki_vault` bleibt schreibgeschützt. Schreibrecht hat nur
+  `wiki_rag`, und nur für das Code-Repo.
 - Keine destruktiven Befehle (`docker compose down -v`, `rm -rf`, `git reset
   --hard`, `git push --force`) ohne ausdrückliche Rückfrage.
 

@@ -1,8 +1,9 @@
-# Wiki-RAG: Obsidian + Postgres/pgvector + nexos.ai
+# Wiki-RAG: Obsidian + Postgres/pgvector + OpenAI
 
 Testaufbau für ein durchsuchbares Firmen-Wiki. Obsidian ist der Editor,
-Git die Source of Truth, Postgres der Index, nexos.ai liefert Embeddings
-und Chat-Modell über einen OpenAI-kompatiblen Endpoint.
+Git die Source of Truth, Postgres der Index, OpenAI liefert Embeddings
+und Chat-Modell. Jeder andere OpenAI-kompatible Anbieter (z.B. nexos.ai)
+lässt sich über die `.env` eintragen.
 
 ## Aufbau auf dem VPS
 
@@ -16,7 +17,7 @@ git clone https://github.com/DEINUSER/wiki-vault.git vault
 # 2. Konfiguration
 cp .env.example .env
 sed -i "s/hier-ein-langes-zufallspasswort/$(openssl rand -hex 24)/" .env
-nano .env          # NEXOS_API_KEY und die beiden Modell-IDs eintragen
+nano .env          # EMBED_API_KEY und CHAT_API_KEY eintragen
 
 # 3. Starten
 docker compose up -d --build
@@ -33,24 +34,28 @@ curl -s localhost:8080/ask -H 'Content-Type: application/json' \
 
 ## Anbieter für Embeddings und Chat
 
-Standardmäßig laufen Embeddings und Chat über `NEXOS_BASE_URL` und
-`NEXOS_API_KEY`. Beide lassen sich getrennt auf einen anderen
-OpenAI-kompatiblen Anbieter umstellen, nur über die `.env`:
+Embeddings und Chat sind getrennt konfigurierbar und können zu
+verschiedenen OpenAI-kompatiblen Anbietern zeigen, nur über die `.env`.
+Derzeit beide OpenAI:
 
 ```
-EMBED_BASE_URL=
-EMBED_API_KEY=
-EMBED_MODEL=Text Embedding 3 Small
-CHAT_BASE_URL=
-CHAT_API_KEY=
-CHAT_MODEL=Claude Sonnet 4.6
+EMBED_BASE_URL=https://api.openai.com/v1
+EMBED_API_KEY=sk-...
+EMBED_MODEL=text-embedding-3-small
+CHAT_BASE_URL=https://api.openai.com/v1
+CHAT_API_KEY=sk-...
+CHAT_MODEL=gpt-5.4-nano
 ```
 
 Leere `*_BASE_URL` / `*_API_KEY` fallen auf `NEXOS_BASE_URL` /
-`NEXOS_API_KEY` zurück. Der Ingest nutzt nur die `EMBED_*`-Werte. Nach einer Änderung:
-`docker compose up -d api` (liest die `.env` neu ein). Wer das
-Embedding-Modell wechselt, muss neu indexieren (`--force`), weil alte und
-neue Vektoren nicht vergleichbar sind.
+`NEXOS_API_KEY` zurück. Der Ingest nutzt nur die `EMBED_*`-Werte.
+
+- Modellnamen vorher prüfen, welche der Key nutzen darf:
+  `curl -s https://api.openai.com/v1/models -H "Authorization: Bearer $KEY" | jq -r '.data[].id'`
+- Nach einer Änderung: `docker compose up -d api` (legt den Container neu an
+  und liest die `.env` neu ein, `restart` reicht nicht).
+- Wer das Embedding-Modell wechselt, muss neu indexieren (`--force`), weil
+  alte und neue Vektoren nicht vergleichbar sind.
 
 ## Wichtig: Embedding-Dimension
 

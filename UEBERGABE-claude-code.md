@@ -15,10 +15,13 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
   - `EMBED_BASE_URL` / `CHAT_BASE_URL` = `https://api.openai.com/v1`
   - Die `NEXOS_*`-Zeilen stehen noch in der `.env`, werden aber nicht benutzt,
     solange die `EMBED_*`/`CHAT_*`-Werte gesetzt sind.
-- **Index:** 1 Dokument (`betrieb/quellenregister-behoerden.md`, 20 Chunks).
-  `README.md` im Vault wird als leer übersprungen. Weil der gesamte Inhalt in
-  der Ebene `betrieb` liegt, antworten Standardabfragen derzeit immer
-  "Dazu steht nichts im Wiki."
+- **Index:** 2 Dokumente, 24 Chunks (Vault-Stand `205efd0`):
+  - `betrieb/quellenregister-behoerden.md` (20 Chunks, `scope: [uem, intune]`)
+  - `umsetzung/uem/it-richtlinie-passwort.md` (4 Chunks, `scope: [uem]`,
+    Beispielseite für den Scope-Test, fachlich nicht geprüft)
+  - `README.md` im Vault wird als leer übersprungen.
+  Standardabfragen finden derzeit nur die UEM-Beispielseite, alles andere
+  liegt in `betrieb`.
 - **Git:** Push per eigenem Deploy Key `/root/.ssh/wiki_rag` (Schreibrecht nur
   `wiki-rag`). Der Vault-Key `wiki_vault` bleibt schreibgeschützt.
 
@@ -32,8 +35,11 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 - Tests aus CLAUDE.md Schritt 5:
   - Betriebsvereinbarung mit `"exclude_layers":[]`: richtige Antwort
     (§ 96 Abs. 1 Z 3, § 96a ArbVG), als nicht verbindlich gekennzeichnet.
-  - `"scope":"intune"`: Seite wird gefunden. Der Filter ist aber **nicht
-    wirklich geprüft**, weil eine Seite nur für `uem` fehlt.
+  - Scope-Filter mit der UEM-Beispielseite geprüft, Frage "Wie setze ich
+    Passwortvorgaben für Mobilgeräte um?": mit `"scope":"uem"` wird die
+    Seite gefunden, mit `"scope":"intune"` kommt "Dazu steht nichts im Wiki."
+    Mit `"scope":"intune"` und allen Ebenen erscheint nur das
+    Quellenregister (gilt für beide), die UEM-Seite nicht.
   - Ohne Treffer: "Dazu steht nichts im Wiki." Themenfremde Frage mit allen
     Ebenen: Modell sagt korrekt, dass es nicht im Wiki steht.
 - `/ask` liefert auch bei "nichts im Wiki" das Feld `excluded_layers`.
@@ -47,11 +53,12 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 
 ## 4. Nächste Schritte
 
-1. Echte Inhalte im Vault: mindestens eine Seite in `richtlinien` oder
-   `umsetzung`, dazu eine Seite nur mit `scope: [uem]`, damit der Scope-Test
-   sinnvoll ist. `Home.md` anlegen.
-2. Danach: `cd vault && git pull`, dann
-   `docker compose run --rm ingest python ingest.py`, Scope-Test wiederholen.
+1. Echte Inhalte im Vault, vor allem in `richtlinien` und `umsetzung`.
+   `Home.md` anlegen. Die UEM-Beispielseite durch eine fachlich geprüfte
+   Seite ersetzen oder als Beispiel kennzeichnen lassen.
+2. Neue Seiten legt Franz auf GitHub oder in Obsidian an (der Server-Key für
+   den Vault ist nur lesend). Danach: `cd vault && git pull`, dann
+   `docker compose run --rm ingest python ingest.py`.
 3. Offene Vorhaben aus `CLAUDE.md` (Cloudflare Tunnel + Access, RIS-Fetcher,
    automatisches Indexieren, Frontend, Review-Report).
 

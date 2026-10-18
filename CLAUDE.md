@@ -81,6 +81,11 @@ Weitere Felder: `scope: [uem]` / `[intune]` (fehlt = gilt für alle),
 `source`, `verbindlich: true/false`, `hinweis`, `owner`, `last_review`,
 `audience`. Das Modell sieht diese Angaben über eine Kopfzeile in jedem Chunk.
 
+`Home.md` im Vault ist Startseite und Autorenhilfe (Ebenen, Seitenliste,
+Frontmatter-Vorlage). Sie liegt absichtlich in `layer: betrieb`, damit sie
+nicht bei jeder Frage als Quelle auftaucht. Neue Seiten dort in die
+Seitenliste eintragen.
+
 ## Bekannte Stolpersteine
 
 - Docker Compose: Argumente für den Ingest NACH dem Befehl angeben:

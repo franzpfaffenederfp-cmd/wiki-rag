@@ -15,7 +15,10 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
   - `EMBED_BASE_URL` / `CHAT_BASE_URL` = `https://api.openai.com/v1`
   - Die `NEXOS_*`-Zeilen stehen noch in der `.env`, werden aber nicht benutzt,
     solange die `EMBED_*`/`CHAT_*`-Werte gesetzt sind.
-- **Index:** 3 Dokumente, 28 Chunks (Vault-Stand `7ffb9bd`):
+- **Index:** 4 Dokumente, 34 Chunks (Vault-Stand `7e068da`):
+  - `Home.md` (6 Chunks, `layer: betrieb`, Startseite und Autorenhilfe;
+    absichtlich in `betrieb`, damit sie nicht bei jeder Frage als Quelle
+    erscheint. Geprüft: taucht nur mit `"exclude_layers":[]` auf)
   - `betrieb/quellenregister-behoerden.md` (20 Chunks, `scope: [uem, intune]`)
   - `umsetzung/uem/it-richtlinie-passwort.md` (4 Chunks, `scope: [uem]`)
   - `umsetzung/intune/passwort-geraetesperre.md` (4 Chunks, `scope: [intune]`)
@@ -56,9 +59,10 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 
 ## 4. Nächste Schritte
 
-1. Echte Inhalte im Vault, vor allem in `richtlinien` und `umsetzung`.
-   `Home.md` anlegen. Die beiden Beispielseiten durch fachlich geprüfte
-   Seiten ersetzen oder als Beispiel kennzeichnen lassen.
+1. Echte Inhalte im Vault, vor allem in `richtlinien` und `umsetzung`, und
+   jeweils in die Seitenliste der `Home.md` eintragen. Die beiden
+   Beispielseiten durch fachlich geprüfte Seiten ersetzen oder als Beispiel
+   kennzeichnen lassen.
 2. Neue Seiten legt Franz auf GitHub oder in Obsidian an (der Server-Key für
    den Vault ist nur lesend). Danach: `cd vault && git pull`, Pfad und
    Frontmatter der neuen Datei prüfen, dann

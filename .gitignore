@@ -1,5 +1,7 @@
-# Zugangsdaten - nie committen
+# Zugangsdaten - nie committen, auch keine Kopien (.env.save von nano, .env.bak)
 .env
+.env.*
+!.env.example
 
 # Inhalts-Repo, wird separat geklont
 vault/

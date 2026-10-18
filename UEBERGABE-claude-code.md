@@ -1,104 +1,74 @@
-# Übergabe an Claude Code (Stand 18.10.2026)
+# Übergabe an Claude Code (Stand 18.10.2026, abends)
 
 Lies zuerst `CLAUDE.md` im Projektordner. Diese Datei ergänzt es um den aktuellen
-Stand und einen konkreten Auftrag. Franz ist IT-Administrator, kein Entwickler:
-Änderungen einzeln und kurz erklärt, vor jedem Commit den Diff zeigen.
+Stand. Franz ist IT-Administrator, kein Entwickler: Änderungen einzeln und kurz
+erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 
 ## 1. Aktueller Stand
 
-- Die Wiki-RAG-Container (`wiki-rag-db-1`, `wiki-rag-api-1`) sind von Franz
-  **absichtlich gestoppt** (`docker compose stop`). Daten im Volume
-  `wiki-rag_pgdata` sind erhalten. **Nicht starten**, bis Franz es sagt.
-- Die Datenbank ist leer (0 Dokumente). Der Ingest ist noch nie erfolgreich
-  gelaufen.
-- Blocker: Die nexos-API antwortet auf Embeddings mit **HTTP 402**
-  ("You're out of AI credits"). Der Key ist gültig (`GET /v1/models` liefert 200).
-  - API-Credits stehen auf 51/51 (leer).
-  - Der Checkout für API-Credits zeigt "Purchases are temporarily unavailable".
-  - Franz hat versehentlich 10.000 **Workspace**-Credits gekauft (120 €, Quittung
-    #2133-6811). Die zählen nicht für die API. Support-Ticket ist offen, Antwort
-    frühestens Montag 19.10.2026.
-  - Fast alle bisherigen API-Kosten stammen vom nexos-Key `Hostinger-Stack`
-    (ca. 39,77 $ von 41,39 $), nicht vom Key `WIKI-RAG-2`. Vermutlich verbrauchen
-    andere Dienste auf dem Server die Credits. Das ist nur eine Vermutung, nicht
-    geprüft.
-- Lokal im Repo existiert ein ungepushter Commit `2b8b950` (`.gitignore`). Die
-  Push-Methode ist noch nicht entschieden (Empfehlung: eigener Deploy Key mit
-  Schreibrecht nur für `wiki-rag`, der Vault-Key bleibt schreibgeschützt; Push nur
-  nach Freigabe mit Diff).
+- **Läuft:** `wiki-rag-db-1` und `wiki-rag-api-1` (gestartet mit
+  `docker compose up -d`), `/health` ok.
+- **Anbieter:** Embeddings und Chat laufen über **OpenAI direkt**, nicht mehr
+  über nexos. Eigener Key für Wiki-RAG (nicht der von Hermes/OpenClaw).
+  - `EMBED_MODEL=text-embedding-3-small` (1536 Dimensionen, passt zum Schema)
+  - `CHAT_MODEL=gpt-5.4-nano` (`gpt-5.6-nano` gibt es für den Key nicht)
+  - `EMBED_BASE_URL` / `CHAT_BASE_URL` = `https://api.openai.com/v1`
+  - Die `NEXOS_*`-Zeilen stehen noch in der `.env`, werden aber nicht benutzt,
+    solange die `EMBED_*`/`CHAT_*`-Werte gesetzt sind.
+- **Index:** 1 Dokument (`betrieb/quellenregister-behoerden.md`, 20 Chunks).
+  `README.md` im Vault wird als leer übersprungen. Weil der gesamte Inhalt in
+  der Ebene `betrieb` liegt, antworten Standardabfragen derzeit immer
+  "Dazu steht nichts im Wiki."
+- **Git:** Push per eigenem Deploy Key `/root/.ssh/wiki_rag` (Schreibrecht nur
+  `wiki-rag`). Der Vault-Key `wiki_vault` bleibt schreibgeschützt.
 
-## 2. Warum nexos, und was sonst möglich wäre
+## 2. Erledigt am 18.10.2026
 
-nexos wurde gewählt, weil Franz dort schon ein Konto hatte. Es ist keine
-technische Notwendigkeit. Die API ist OpenAI-kompatibel.
+- Konfiguration getrennt: `EMBED_BASE_URL`, `EMBED_API_KEY`, `EMBED_MODEL`,
+  `CHAT_BASE_URL`, `CHAT_API_KEY`, `CHAT_MODEL`. Leere oder fehlende Werte
+  fallen auf `NEXOS_BASE_URL` / `NEXOS_API_KEY` zurück. Vorlage: `.env.example`.
+- Deploy Key mit Schreibrecht für `wiki-rag` eingerichtet und getestet.
+- Umstieg auf OpenAI, erster erfolgreicher Ingest.
+- Tests aus CLAUDE.md Schritt 5:
+  - Betriebsvereinbarung mit `"exclude_layers":[]`: richtige Antwort
+    (§ 96 Abs. 1 Z 3, § 96a ArbVG), als nicht verbindlich gekennzeichnet.
+  - `"scope":"intune"`: Seite wird gefunden. Der Filter ist aber **nicht
+    wirklich geprüft**, weil eine Seite nur für `uem` fehlt.
+  - Ohne Treffer: "Dazu steht nichts im Wiki." Themenfremde Frage mit allen
+    Ebenen: Modell sagt korrekt, dass es nicht im Wiki steht.
+- `/ask` liefert auch bei "nichts im Wiki" das Feld `excluded_layers`.
 
-| Variante | Embeddings | Chat | Aufwand |
-|---|---|---|---|
-| nexos (jetzt) | Text Embedding 3 Small (1536) | Claude Sonnet 4.6 | keiner |
-| OpenAI direkt | text-embedding-3-small (1536, Schema bleibt) | GPT-Modell | nur `.env` |
-| Anthropic direkt | gibt es dort nicht | Claude per API-Key (nicht im Max-Abo enthalten, Abrechnung pro Token) | Code-Zweig für Anthropic-SDK |
-| Lokal | z. B. multilingual-E5 auf dem Server | weiter extern nötig | Schema und Vektorlänge ändern, `--force` Ingest |
+## 3. Bekannte Schwächen (nicht behoben)
 
-Preise und Datenschutzdetails (Region, AVV) sind nicht recherchiert. Franz muss
-sie pro Anbieter prüfen.
+- Bei Antworten "steht nicht im Wiki" listet `/ask` trotzdem die gefundenen
+  Auszüge unter `sources`. Ein Frontend würde damit irreführende Quellen zeigen.
+  Am besten zusammen mit dem Frontend lösen.
+- `sources` zeigt pro Datei nur den ersten passenden Abschnitt.
 
-Entscheidung: Erst die Antwort vom nexos-Support abwarten. Parallel die
-Konfiguration so trennen, dass ein späterer Wechsel nur `.env` betrifft.
+## 4. Nächste Schritte
 
-## 3. Auftrag: Konfiguration für Embeddings und Chat trennen
+1. Echte Inhalte im Vault: mindestens eine Seite in `richtlinien` oder
+   `umsetzung`, dazu eine Seite nur mit `scope: [uem]`, damit der Scope-Test
+   sinnvoll ist. `Home.md` anlegen.
+2. Danach: `cd vault && git pull`, dann
+   `docker compose run --rm ingest python ingest.py`, Scope-Test wiederholen.
+3. Offene Vorhaben aus `CLAUDE.md` (Cloudflare Tunnel + Access, RIS-Fetcher,
+   automatisches Indexieren, Frontend, Review-Report).
 
-Ziel: Embeddings und Chat können unabhängig voneinander zu verschiedenen Anbietern
-zeigen, ohne weitere Code-Änderung.
+Nach Änderungen an der `.env`: `docker compose up -d` (legt `api` neu an und
+liest die `.env` neu). `docker compose start` / `restart` reichen dafür nicht.
+Wer das Embedding-Modell wechselt, muss mit `--force` neu indexieren.
 
-Neue Variablen in `.env` und `.env.example`:
+## 5. Offen bei Franz
 
-```
-EMBED_BASE_URL=
-EMBED_API_KEY=
-EMBED_MODEL=
-CHAT_BASE_URL=
-CHAT_API_KEY=
-CHAT_MODEL=
-```
-
-Anforderungen:
-
-1. **Abwärtskompatibel.** Fehlen die neuen Variablen, fallen sie auf
-   `NEXOS_BASE_URL` und `NEXOS_API_KEY` zurück. Die bestehende `.env` muss ohne
-   Änderung weiter funktionieren.
-2. `app/main.py`: zwei OpenAI-Clients, einer für Embeddings, einer für Chat.
-3. `app/ingest.py`: der Embedding-Client liest die `EMBED_*`-Variablen.
-4. `docker-compose.yml` braucht voraussichtlich keine Änderung (`env_file: .env`),
-   bitte prüfen.
-5. Das Schema (`vector(1536)`) bleibt unverändert. Ein Anbieter mit anderer
-   Vektorlänge wäre ein eigener Schritt mit Migration und `--force`-Ingest.
-6. `CLAUDE.md` (Abschnitt Konfiguration) und `README.md` aktualisieren.
-7. Nach der Änderung nur **bauen und die Syntax prüfen** (`docker compose build`,
-   `python -m py_compile`). Keine Container starten, keine API-Aufrufe, solange
-   die Credits fehlen.
-8. Diff zeigen, auf Freigabe warten, dann committen. Push nur nach Freigabe.
-
-## 4. Danach, sobald die API wieder Credits hat
-
-Franz bestätigt: `curl`-Test auf Embeddings liefert 200. Dann:
-
-1. `docker compose start`, `/health` prüfen.
-2. Ingest: `docker compose run --rm ingest python ingest.py --force`
-3. Tests aus Schritt 5 in `CLAUDE.md`:
-   - "Brauche ich für MDM eine Betriebsvereinbarung?" nur mit
-     `"exclude_layers":[]`, weil die Seite in der Ebene `betrieb` liegt.
-   - `"scope":"intune"`. Dafür fehlt noch eine Seite nur für `uem`, damit der
-     Filter sinnvoll prüfbar ist.
-   - Eine Frage ohne Treffer muss "steht nicht im Wiki" liefern.
-
-## 5. Offen bei Franz (nicht Teil des Auftrags)
-
-- nexos-Support (Montag): Erstattung oder Umwandlung der Workspace-Credits,
-  Checkout reparieren.
-- Limits für die nexos-Keys setzen: `Hostinger-Stack` (derzeit unbegrenzt),
-  `WIKI-RAG-2` (derzeit 50 $, gewünscht ca. 5 $). Erst danach API-Credits
-  aufladen, am besten mit 10 Credits zum Testen.
-- Echte Wiki-Seiten schreiben und `Home.md` in den Vault legen.
+- OpenAI: Datenschutz prüfen (Region, AVV, Nutzung der Daten zum Training),
+  bevor echte Inhalte indexiert werden. Budget-Limit für den Wiki-RAG-Key bzw.
+  das Projekt setzen.
+- nexos: Support-Ticket zu den versehentlich gekauften Workspace-Credits
+  (Quittung #2133-6811), Antwort frühestens 19.10.2026. Key `Hostinger-Stack`
+  hat kein Limit. Ob nexos überhaupt noch gebraucht wird, ist offen.
+- `/root/.ssh/authorized_keys` wurde am 18.10.2026 um 12:12 geändert, nicht
+  durch Claude. Prüfen, ob das gewollt war.
 
 ## 6. Regeln (aus CLAUDE.md, hier zur Sicherheit wiederholt)
 
@@ -108,5 +78,6 @@ Franz bestätigt: `curl`-Test auf Embeddings liefert 200. Dann:
 - Verboten: `docker system prune`, `docker container/volume/network prune`,
   `docker image prune -a`, `docker compose down -v`, `rm -rf`, `git reset --hard`,
   `git push --force`.
-- Den nexos-Key und die `.env` nie ausgeben, loggen oder committen.
+- API-Keys und die `.env` nie ausgeben, loggen oder committen. Kopien wie
+  `.env.save` sind per `.gitignore` ausgeschlossen.
 - Ports nur an `127.0.0.1`. Kein Beitritt zum Netzwerk `proxy`.

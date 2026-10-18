@@ -109,7 +109,12 @@ def ask(payload: Ask):
         ).fetchall()
 
     if not rows:
-        return {"answer": "Dazu steht nichts im Wiki.", "sources": [], "scope": payload.scope}
+        return {
+            "answer": "Dazu steht nichts im Wiki.",
+            "sources": [],
+            "scope": payload.scope,
+            "excluded_layers": excluded,
+        }
 
     context = "\n\n---\n\n".join(f"[{row[1]}]\n{row[4]}" for row in rows)
     completion = chat_client.chat.completions.create(

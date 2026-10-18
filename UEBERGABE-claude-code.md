@@ -15,12 +15,14 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
   - `EMBED_BASE_URL` / `CHAT_BASE_URL` = `https://api.openai.com/v1`
   - Die `NEXOS_*`-Zeilen stehen noch in der `.env`, werden aber nicht benutzt,
     solange die `EMBED_*`/`CHAT_*`-Werte gesetzt sind.
-- **Index:** 2 Dokumente, 24 Chunks (Vault-Stand `205efd0`):
+- **Index:** 3 Dokumente, 28 Chunks (Vault-Stand `7ffb9bd`):
   - `betrieb/quellenregister-behoerden.md` (20 Chunks, `scope: [uem, intune]`)
-  - `umsetzung/uem/it-richtlinie-passwort.md` (4 Chunks, `scope: [uem]`,
-    Beispielseite für den Scope-Test, fachlich nicht geprüft)
+  - `umsetzung/uem/it-richtlinie-passwort.md` (4 Chunks, `scope: [uem]`)
+  - `umsetzung/intune/passwort-geraetesperre.md` (4 Chunks, `scope: [intune]`)
+  - Die beiden `umsetzung`-Seiten sind Beispielseiten für den Scope-Test,
+    fachlich nicht geprüft (`source: beispiel`, `verbindlich: false`).
   - `README.md` im Vault wird als leer übersprungen.
-  Standardabfragen finden derzeit nur die UEM-Beispielseite, alles andere
+  Standardabfragen finden derzeit nur die beiden Beispielseiten, alles andere
   liegt in `betrieb`.
 - **Git:** Push per eigenem Deploy Key `/root/.ssh/wiki_rag` (Schreibrecht nur
   `wiki-rag`). Der Vault-Key `wiki_vault` bleibt schreibgeschützt.
@@ -35,11 +37,12 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 - Tests aus CLAUDE.md Schritt 5:
   - Betriebsvereinbarung mit `"exclude_layers":[]`: richtige Antwort
     (§ 96 Abs. 1 Z 3, § 96a ArbVG), als nicht verbindlich gekennzeichnet.
-  - Scope-Filter mit der UEM-Beispielseite geprüft, Frage "Wie setze ich
-    Passwortvorgaben für Mobilgeräte um?": mit `"scope":"uem"` wird die
-    Seite gefunden, mit `"scope":"intune"` kommt "Dazu steht nichts im Wiki."
-    Mit `"scope":"intune"` und allen Ebenen erscheint nur das
-    Quellenregister (gilt für beide), die UEM-Seite nicht.
+  - Scope-Filter mit beiden Beispielseiten geprüft, Frage "Wie setze ich
+    Passwortvorgaben für Mobilgeräte um?":
+    - `"scope":"uem"`: nur die UEM-Seite
+    - `"scope":"intune"`: nur die Intune-Seite
+    - ohne Scope: beide Seiten, Antwort in getrennten Abschnitten pro System,
+      keine Vermischung von Schritten (auch mit `gpt-5.4-nano`)
   - Ohne Treffer: "Dazu steht nichts im Wiki." Themenfremde Frage mit allen
     Ebenen: Modell sagt korrekt, dass es nicht im Wiki steht.
 - `/ask` liefert auch bei "nichts im Wiki" das Feld `excluded_layers`.
@@ -54,11 +57,19 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 ## 4. Nächste Schritte
 
 1. Echte Inhalte im Vault, vor allem in `richtlinien` und `umsetzung`.
-   `Home.md` anlegen. Die UEM-Beispielseite durch eine fachlich geprüfte
-   Seite ersetzen oder als Beispiel kennzeichnen lassen.
+   `Home.md` anlegen. Die beiden Beispielseiten durch fachlich geprüfte
+   Seiten ersetzen oder als Beispiel kennzeichnen lassen.
 2. Neue Seiten legt Franz auf GitHub oder in Obsidian an (der Server-Key für
-   den Vault ist nur lesend). Danach: `cd vault && git pull`, dann
+   den Vault ist nur lesend). Danach: `cd vault && git pull`, Pfad und
+   Frontmatter der neuen Datei prüfen, dann
    `docker compose run --rm ingest python ingest.py`.
+   - Stolperstein GitHub-Weboberfläche: "Add file" legt die Datei relativ zum
+     gerade geöffneten Ordner an (so entstand einmal
+     `umsetzung/uem/umsetzung/intune/...`). Vorher in die oberste Ebene des
+     Repos wechseln. Verschieben: Datei bearbeiten, im Pfadfeld vor dem
+     Dateinamen mit der Rücktaste Ordner entfernen.
+   - Die erste Zeile muss genau `---` sein, sonst wird das Frontmatter nicht
+     erkannt und die Seite gilt für alle Systeme.
 3. Offene Vorhaben aus `CLAUDE.md` (Cloudflare Tunnel + Access, RIS-Fetcher,
    automatisches Indexieren, Frontend, Review-Report).
 

@@ -143,9 +143,10 @@ Tests erfolgreich, Scope-Filter geprüft. Details und nächste Schritte in
 
 Testfälle für spätere Prüfungen: Betriebsvereinbarung (Fund aus `betrieb`, nur
 mit `"exclude_layers":[]`), Scope-Filter ("Wie setze ich Passwortvorgaben für
-Mobilgeräte um?": mit `"scope":"uem"` Fund aus
-`umsetzung/uem/it-richtlinie-passwort.md`, mit `"scope":"intune"` "Dazu steht
-nichts im Wiki."), Frage ohne Treffer muss "steht nicht im Wiki" liefern.
+Mobilgeräte um?": mit `"scope":"uem"` nur
+`umsetzung/uem/it-richtlinie-passwort.md`, mit `"scope":"intune"` nur
+`umsetzung/intune/passwort-geraetesperre.md`, ohne Scope beide, Antwort nach
+System getrennt), Frage ohne Treffer muss "steht nicht im Wiki" liefern.
 
 ## Offene Vorhaben
 

@@ -19,9 +19,25 @@ DEFAULT_EXCLUDED_LAYERS = [
     x.strip() for x in os.environ.get("EXCLUDE_LAYERS", "betrieb").split(",") if x.strip()
 ]
 
-client = OpenAI(
-    base_url=os.environ.get("NEXOS_BASE_URL", "https://api.nexos.ai/v1"),
-    api_key=os.environ["NEXOS_API_KEY"],
+
+def env_or(name: str, fallback: str, default: Optional[str] = None) -> str:
+    """Liest name, sonst fallback, sonst default. Leere Werte zählen als nicht
+    gesetzt, damit "EMBED_API_KEY=" in der .env auf NEXOS_API_KEY zurückfällt."""
+    value = os.environ.get(name) or os.environ.get(fallback) or default
+    if not value:
+        raise RuntimeError(f"Weder {name} noch {fallback} ist gesetzt.")
+    return value
+
+
+# Embeddings und Chat können zu verschiedenen Anbietern zeigen. Ohne EMBED_*-
+# bzw. CHAT_*-Angaben gilt für beide der nexos-Zugang.
+embed_client = OpenAI(
+    base_url=env_or("EMBED_BASE_URL", "NEXOS_BASE_URL", "https://api.nexos.ai/v1"),
+    api_key=env_or("EMBED_API_KEY", "NEXOS_API_KEY"),
+)
+chat_client = OpenAI(
+    base_url=env_or("CHAT_BASE_URL", "NEXOS_BASE_URL", "https://api.nexos.ai/v1"),
+    api_key=env_or("CHAT_API_KEY", "NEXOS_API_KEY"),
 )
 
 SYSTEM_PROMPT = """Du beantwortest Fragen ausschließlich auf Basis der
@@ -84,7 +100,7 @@ def ask(payload: Ask):
     excluded = (
         DEFAULT_EXCLUDED_LAYERS if payload.exclude_layers is None else payload.exclude_layers
     )
-    embedding = client.embeddings.create(model=EMBED_MODEL, input=[question]).data[0].embedding
+    embedding = embed_client.embeddings.create(model=EMBED_MODEL, input=[question]).data[0].embedding
 
     with psycopg.connect(DATABASE_URL) as conn:
         rows = conn.execute(
@@ -96,7 +112,7 @@ def ask(payload: Ask):
         return {"answer": "Dazu steht nichts im Wiki.", "sources": [], "scope": payload.scope}
 
     context = "\n\n---\n\n".join(f"[{row[1]}]\n{row[4]}" for row in rows)
-    completion = client.chat.completions.create(
+    completion = chat_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},

@@ -21,9 +21,20 @@ MAX_CHARS = int(os.environ.get("MAX_CHUNK_CHARS", "2000"))
 FORCE = "--force" in sys.argv
 BATCH_SIZE = 32
 
+
+def env_or(name: str, fallback: str, default=None) -> str:
+    """Liest name, sonst fallback, sonst default. Leere Werte zählen als nicht
+    gesetzt, damit "EMBED_API_KEY=" in der .env auf NEXOS_API_KEY zurückfällt."""
+    value = os.environ.get(name) or os.environ.get(fallback) or default
+    if not value:
+        raise RuntimeError(f"Weder {name} noch {fallback} ist gesetzt.")
+    return value
+
+
+# Der Ingest braucht nur Embeddings. Ohne EMBED_*-Angaben gilt der nexos-Zugang.
 client = OpenAI(
-    base_url=os.environ.get("NEXOS_BASE_URL", "https://api.nexos.ai/v1"),
-    api_key=os.environ["NEXOS_API_KEY"],
+    base_url=env_or("EMBED_BASE_URL", "NEXOS_BASE_URL", "https://api.nexos.ai/v1"),
+    api_key=env_or("EMBED_API_KEY", "NEXOS_API_KEY"),
 )
 
 HEADING_RE = re.compile(r"^(#{1,3})\s+(.*)$")

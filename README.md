@@ -31,6 +31,27 @@ curl -s localhost:8080/ask -H 'Content-Type: application/json' \
   -d '{"question":"Wie läuft der Review-Prozess?"}' | jq
 ```
 
+## Anbieter für Embeddings und Chat
+
+Standardmäßig laufen Embeddings und Chat über `NEXOS_BASE_URL` und
+`NEXOS_API_KEY`. Beide lassen sich getrennt auf einen anderen
+OpenAI-kompatiblen Anbieter umstellen, nur über die `.env`:
+
+```
+EMBED_BASE_URL=
+EMBED_API_KEY=
+EMBED_MODEL=Text Embedding 3 Small
+CHAT_BASE_URL=
+CHAT_API_KEY=
+CHAT_MODEL=Claude Sonnet 4.6
+```
+
+Leere `*_BASE_URL` / `*_API_KEY` fallen auf `NEXOS_BASE_URL` /
+`NEXOS_API_KEY` zurück. Der Ingest nutzt nur die `EMBED_*`-Werte. Nach einer Änderung:
+`docker compose up -d api` (liest die `.env` neu ein). Wer das
+Embedding-Modell wechselt, muss neu indexieren (`--force`), weil alte und
+neue Vektoren nicht vergleichbar sind.
+
 ## Wichtig: Embedding-Dimension
 
 `db/schema.sql` ist auf `vector(1536)` gesetzt. Passt dein Embedding-Modell

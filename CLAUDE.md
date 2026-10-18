@@ -36,7 +36,15 @@ nexos.ai (Chat) -> Antwort mit Quellen.
 `POSTGRES_PASSWORD`, `NEXOS_API_KEY`, `NEXOS_BASE_URL=https://api.nexos.ai/v1`,
 `EMBED_MODEL=Text Embedding 3 Small` (1536 Dimensionen, passt zum Schema),
 `CHAT_MODEL=Claude Sonnet 4.6`, `MAX_CHUNK_CHARS`, `MATCH_COUNT`,
-`EXCLUDE_LAYERS=betrieb`.
+`EXCLUDE_LAYERS=betrieb`. Vorlage: `.env.example`.
+
+- Embeddings und Chat sind getrennt konfigurierbar: `EMBED_BASE_URL`,
+  `EMBED_API_KEY`, `EMBED_MODEL` und `CHAT_BASE_URL`, `CHAT_API_KEY`,
+  `CHAT_MODEL`. Fehlt eine `*_BASE_URL` / `*_API_KEY` oder ist sie leer, gilt
+  `NEXOS_BASE_URL` / `NEXOS_API_KEY`. Ein Anbieterwechsel betrifft so nur die
+  `.env`. Der Ingest nutzt nur die `EMBED_*`-Werte.
+- Ein Embedding-Modell mit anderer Vektorlänge als 1536 braucht zusätzlich
+  Schema-Migration und `--force`-Ingest, `.env` allein reicht dann nicht.
 
 - Modell-IDs bei nexos enthalten LEERZEICHEN und werden im Klartext verwendet.
   In der `.env` ohne Anführungszeichen, in JSON-Bodies in Anführungszeichen.

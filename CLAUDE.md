@@ -81,6 +81,15 @@ Weitere Felder: `scope: [uem]` / `[intune]` (fehlt = gilt für alle),
 `source`, `verbindlich: true/false`, `hinweis`, `owner`, `last_review`,
 `audience`. Das Modell sieht diese Angaben über eine Kopfzeile in jedem Chunk.
 
+- Richtlinien haben kein `scope` (gelten für alle Systeme) und verlinken auf
+  die Umsetzungsseiten. Die Umsetzungsseiten wiederholen keine Werte aus der
+  Richtlinie.
+- Werte, die noch nicht entschieden sind, in der Seite als "Vorschlag"
+  kennzeichnen. Von Claude vorgeschlagene Werte sind keine Vorgaben.
+  `verbindlich: true` erst nach Freigabe durch Franz bzw. die Organisation.
+- Dateinamen im ganzen Vault eindeutig halten, sonst werden
+  Obsidian-Links `[[name]]` mehrdeutig.
+
 `Home.md` im Vault ist Startseite und Autorenhilfe (Ebenen, Seitenliste,
 Frontmatter-Vorlage). Sie liegt absichtlich in `layer: betrieb`, damit sie
 nicht bei jeder Frage als Quelle auftaucht. Neue Seiten dort in die

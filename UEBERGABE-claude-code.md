@@ -15,18 +15,24 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
   - `EMBED_BASE_URL` / `CHAT_BASE_URL` = `https://api.openai.com/v1`
   - Die `NEXOS_*`-Zeilen stehen noch in der `.env`, werden aber nicht benutzt,
     solange die `EMBED_*`/`CHAT_*`-Werte gesetzt sind.
-- **Index:** 4 Dokumente, 34 Chunks (Vault-Stand `7e068da`):
-  - `Home.md` (6 Chunks, `layer: betrieb`, Startseite und Autorenhilfe;
+- **Index:** 5 Dokumente, 40 Chunks (Vault-Stand `b5812f6`):
+  - `Home.md` (7 Chunks, `layer: betrieb`, Startseite und Autorenhilfe;
     absichtlich in `betrieb`, damit sie nicht bei jeder Frage als Quelle
     erscheint. Geprüft: taucht nur mit `"exclude_layers":[]` auf)
+  - `richtlinien/mobilgeraete-passwort-sperre.md` (5 Chunks, ohne `scope`,
+    gilt für alle Systeme). **Entwurf**, `verbindlich: false`. Gestützt durch
+    das Quellenregister: Sperre Pflicht, kein Zwangswechsel, Wechsel bei
+    Kompromittierung, Verschlüsselung. Die Werte 6 Zeichen, 5 Minuten,
+    10 Fehlversuche und Biometrie sind **Vorschläge von Claude**, keine
+    Behördenwerte, und müssen von Franz bzw. der Organisation festgelegt
+    werden.
   - `betrieb/quellenregister-behoerden.md` (20 Chunks, `scope: [uem, intune]`)
   - `umsetzung/uem/it-richtlinie-passwort.md` (4 Chunks, `scope: [uem]`)
   - `umsetzung/intune/passwort-geraetesperre.md` (4 Chunks, `scope: [intune]`)
   - Die beiden `umsetzung`-Seiten sind Beispielseiten für den Scope-Test,
     fachlich nicht geprüft (`source: beispiel`, `verbindlich: false`).
   - `README.md` im Vault wird als leer übersprungen.
-  Standardabfragen finden derzeit nur die beiden Beispielseiten, alles andere
-  liegt in `betrieb`.
+  Standardabfragen finden die Richtlinie und die beiden Beispielseiten.
 - **Git:** Push per eigenem Deploy Key `/root/.ssh/wiki_rag` (Schreibrecht nur
   `wiki-rag`). Der Vault-Key `wiki_vault` bleibt schreibgeschützt.
 
@@ -46,6 +52,13 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
     - `"scope":"intune"`: nur die Intune-Seite
     - ohne Scope: beide Seiten, Antwort in getrennten Abschnitten pro System,
       keine Vermischung von Schritten (auch mit `gpt-5.4-nano`)
+  - Richtlinie: "Wie lange darf ein Mobilgerät ungesperrt bleiben?" liefert
+    5 Minuten mit dem Hinweis "Entwurf, Vorschlag". "Muss der Geräte-Code
+    regelmäßig geändert werden, und wie stelle ich das ein?" mit
+    `"scope":"intune"` kombiniert Richtlinie (Was) und Intune-Seite (Wie),
+    die UEM-Seite bleibt draußen. Kleine Schwäche von `nano`: der Zusatz
+    "Wechsel bei Kompromittierung" fehlte, und es bot eine Rückfrage an,
+    obwohl `/ask` keinen Gesprächsverlauf kennt.
   - Ohne Treffer: "Dazu steht nichts im Wiki." Themenfremde Frage mit allen
     Ebenen: Modell sagt korrekt, dass es nicht im Wiki steht.
 - `/ask` liefert auch bei "nichts im Wiki" das Feld `excluded_layers`.
@@ -62,7 +75,8 @@ erklärt, vor jedem Commit den Diff zeigen, Push nur nach Freigabe.
 1. Echte Inhalte im Vault, vor allem in `richtlinien` und `umsetzung`, und
    jeweils in die Seitenliste der `Home.md` eintragen. Die beiden
    Beispielseiten durch fachlich geprüfte Seiten ersetzen oder als Beispiel
-   kennzeichnen lassen.
+   kennzeichnen lassen. Für die Passwort-Richtlinie die Vorschlagswerte
+   festlegen, mit dem Betriebsrat abstimmen, dann `verbindlich: true`.
 2. Neue Seiten legt Franz auf GitHub oder in Obsidian an (der Server-Key für
    den Vault ist nur lesend). Danach: `cd vault && git pull`, Pfad und
    Frontmatter der neuen Datei prüfen, dann
